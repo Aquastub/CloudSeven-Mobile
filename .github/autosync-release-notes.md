@@ -1,0 +1,2 @@
+- Updated to upstream Nuvio 0.6.5-beta, including chapter navigation, half-open foldable playback controls, media-server title lookup fixes, language detection improvements, and translations.
+- Kept Reshaped settings, AutoSync/AudioSync, seek previews, Live TV channel controls, and network monitoring. Seek-preview ticks and chapter markers work together, and Reshaped actions remain available in the folded layout.
