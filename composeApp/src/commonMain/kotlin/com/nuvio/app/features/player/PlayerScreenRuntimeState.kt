@@ -8,6 +8,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.features.addons.AddonsUiState
+import com.nuvio.app.features.addons.LocalAddonUi
+import com.nuvio.app.features.addons.PrerollClip
 import com.nuvio.app.features.details.MetaDetails
 import com.nuvio.app.features.details.MetaDetailsUiState
 import com.nuvio.app.features.details.MetaScreenSettingsUiState
@@ -134,6 +136,19 @@ internal class PlayerScreenRuntime(
     var activeInitialPositionMs by mutableStateOf(initialPositionMs)
     var activeInitialProgressFraction by mutableStateOf(initialProgressFraction)
     var shouldPlay by mutableStateOf(true)
+
+    /** A clip an addon wants played before this episode (drawn above the player, then the episode starts). */
+    var prerollClip by mutableStateOf<PrerollClip?>(null)
+
+    /**
+     * True from the moment an episode begins until its pre-roll has been asked for and played, so the
+     * episode itself waits (it keeps loading, but does not start). Starts true only when it can matter.
+     */
+    var prerollPending by mutableStateOf(
+        LocalAddonUi.prerollProvider != null &&
+            seasonNumber != null && episodeNumber != null &&
+            initialPositionMs <= 0L && (initialProgressFraction ?: 0f) <= 0f,
+    )
     var resizeMode by mutableStateOf(playerSettingsUiState.resizeMode)
     var layoutSize by mutableStateOf(IntSize.Zero)
     var playbackSnapshot by mutableStateOf(PlayerPlaybackSnapshot())

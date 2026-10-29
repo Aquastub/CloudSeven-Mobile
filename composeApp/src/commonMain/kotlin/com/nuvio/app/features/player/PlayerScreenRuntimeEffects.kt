@@ -40,11 +40,44 @@ import com.nuvio.app.features.watching.application.WatchingState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
+import com.nuvio.app.features.addons.LocalAddonUi
+import com.nuvio.app.features.addons.PrerollRequest
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 
 @Composable
 internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
+    // Pre-roll: every time an episode begins from the start, addons may offer a short clip to play first.
+    LaunchedEffect(activeVideoId) {
+        val provider = LocalAddonUi.prerollProvider
+        val season = activeSeasonNumber
+        val episode = activeEpisodeNumber
+        val startsFromBeginning = activeInitialPositionMs <= 0L && (activeInitialProgressFraction ?: 0f) <= 0f
+        if (provider == null || season == null || episode == null || !startsFromBeginning) {
+            prerollPending = false
+            return@LaunchedEffect
+        }
+        prerollPending = true
+        val clip = withTimeoutOrNull(PREROLL_LOOKUP_TIMEOUT_MS) {
+            runCatching {
+                provider(
+                    PrerollRequest(
+                        contentType = contentType,
+                        title = title,
+                        seasonNumber = season,
+                        episodeNumber = episode,
+                        episodeTitle = activeEpisodeTitle,
+                        videoId = activeVideoId,
+                        parentMetaId = parentMetaId,
+                    ),
+                )
+            }.getOrNull()
+        }
+        // No clip: the episode starts right away. With a clip: it waits until the overlay is done.
+        if (clip == null) prerollPending = false else prerollClip = clip
+    }
+
     val currentFeedback = liveGestureFeedback ?: gestureFeedback
     LaunchedEffect(currentFeedback) {
         if (currentFeedback != null) {
@@ -920,3 +953,4 @@ private fun findCredentialRefreshCandidate(
 
 private const val CREDENTIAL_REFRESH_POLL_COUNT = 30
 private const val CREDENTIAL_REFRESH_POLL_INTERVAL_MS = 500L
+private const val PREROLL_LOOKUP_TIMEOUT_MS = 6_000L

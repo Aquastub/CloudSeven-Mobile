@@ -17,7 +17,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.nuvio.app.features.addons.LocalAddonUi
+import com.nuvio.app.features.addons.PlayerAddonContext
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.features.autosync.bubble.AutoSyncBubbleToastHost
@@ -181,7 +185,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                     externalSubtitles = externalSubtitles,
                     streamType = activeStreamType,
                     modifier = videoModifier,
-                    playWhenReady = shouldPlay,
+                    playWhenReady = shouldPlay && !prerollPending,
                     initialPositionMs = activeInitialPositionMs.takeIf { it > 0L },
                     initialPositionRequestKey = initialPositionRequestKey,
                     resizeMode = resizeMode,
@@ -469,6 +473,39 @@ private fun PlayerScreenRuntime.RenderPlayerControls(
             onUnlock = { unlockPlayerControls() },
             modifier = modifier,
         )
+    }
+
+    // A clip an addon wants shown before the episode. Covers everything until it ends or is skipped.
+    prerollClip?.let { clip ->
+        PrerollOverlay(
+            clip = clip,
+            onFinished = {
+                prerollClip = null
+                prerollPending = false
+            },
+        )
+    }
+
+    // Buttons added by addons (e.g. a DVR "Record" button). Drawn above the controls.
+    val addonPlayerActions = LocalAddonUi.playerActions
+    if (addonPlayerActions != null) {
+        AnimatedVisibility(
+            visible = controlsVisible && !playerControlsLocked && !isInPip,
+            enter = fadeIn(),
+            exit = fadeOut(),
+        ) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
+                addonPlayerActions(
+                    PlayerAddonContext(
+                        title = title,
+                        streamTitle = activeStreamTitle,
+                        providerName = activeProviderName,
+                        streamUrl = activeSourceUrl,
+                    ),
+                    Modifier.padding(top = 76.dp, end = horizontalSafePadding + 16.dp),
+                )
+            }
+        }
     }
 }
 

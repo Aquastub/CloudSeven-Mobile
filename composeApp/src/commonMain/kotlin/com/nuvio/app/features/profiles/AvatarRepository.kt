@@ -2,6 +2,7 @@ package com.nuvio.app.features.profiles
 
 import co.touchlab.kermit.Logger
 import com.nuvio.app.core.network.ServerConfigurationRepository
+import com.nuvio.app.core.network.OfflineMode
 import com.nuvio.app.core.network.SupabaseProvider
 import com.nuvio.app.features.membership.CosmeticEntitlement
 import com.nuvio.app.features.membership.MemberAccessRepository
@@ -161,6 +162,7 @@ object AvatarRepository {
     }
 
     private suspend fun fetchStandardCatalog() {
+        if (OfflineMode.enabled) return
         if (standardFetchInFlight) return
         standardFetchInFlight = true
         try {
@@ -183,6 +185,7 @@ object AvatarRepository {
     }
 
     private suspend fun fetchMemberCatalog() {
+        if (OfflineMode.enabled) return
         if (memberFetchInFlight) return
         memberFetchInFlight = true
         try {

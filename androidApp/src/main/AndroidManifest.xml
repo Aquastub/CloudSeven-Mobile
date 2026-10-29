@@ -25,6 +25,12 @@
             android:name="io.sentry.auto-init"
             android:value="false" />
 
+        <!-- Registers the embedded Python for addons at startup (before Application.onCreate). -->
+        <provider
+            android:name="com.nuvio.app.PythonHostInitializer"
+            android:authorities="${applicationId}.python-host"
+            android:exported="false" />
+
         <activity
             android:exported="true"
             android:name="com.nuvio.app.MainActivity"

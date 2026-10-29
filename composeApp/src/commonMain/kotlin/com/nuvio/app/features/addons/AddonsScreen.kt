@@ -105,6 +105,7 @@ internal fun AddonsSettingsPageContent(
     ) {
         SectionHeader(stringResource(Res.string.addons_section_overview))
         OverviewCard(overview = overview)
+        AddonDiagnosticsPanel(modifier = Modifier.fillMaxWidth())
 
         SectionHeader(stringResource(Res.string.addons_section_add_addon))
         AddAddonCard(
@@ -139,6 +140,8 @@ internal fun AddonsSettingsPageContent(
                 }
             },
         )
+
+        LocalAddonUi.importContent?.invoke()
 
         SectionHeader(stringResource(Res.string.addons_section_installed))
         if (uiState.addons.isEmpty()) {
@@ -576,6 +579,13 @@ private fun InstalledAddonCard(
                         color = MaterialTheme.colorScheme.error,
                     )
                 }
+            }
+        }
+
+        if (addon.manifestUrl.isLocalAddonUrl()) {
+            LocalAddonUi.settingsContent?.let { settingsContent ->
+                Spacer(modifier = Modifier.height(14.dp))
+                settingsContent(addon.manifestUrl)
             }
         }
     }

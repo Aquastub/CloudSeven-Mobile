@@ -16,6 +16,7 @@ fun readXcconfigValue(file: File, key: String): String? {
 
 plugins {
     alias(libs.plugins.androidApplication)
+    alias(libs.plugins.chaquopy)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.sentry.android.gradle)
 }
@@ -49,6 +50,14 @@ val buildsReleaseApks = requestedTaskNames.any {
     it.startsWith("assemble", ignoreCase = true) && it.endsWith("Release", ignoreCase = true)
 }
 
+// Python for addons (nuvio.python). 3.11 is the newest version that still supports every ABI the app ships
+// (32-bit armeabi-v7a and x86 were dropped from Python 3.12 on). Needs Python 3.11 on the build machine.
+chaquopy {
+    defaultConfig {
+        version = "3.11"
+    }
+}
+
 android {
     namespace = "com.nuvio.android"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -72,6 +81,14 @@ android {
         versionCode = releaseAppVersionCode
         versionName = releaseAppVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Chaquopy (Python) needs to know which CPU types to package. Release builds already say so through
+        // the ABI splits below (and Android refuses both at once); every other build, such as debug, lists them here.
+        if (!buildsReleaseApks) {
+            ndk {
+                abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            }
+        }
     }
 
     flavorDimensions += "distribution"

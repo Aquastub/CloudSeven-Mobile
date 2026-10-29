@@ -1,5 +1,8 @@
 package com.nuvio.app.features.addons
 
+/** Best-effort diagnostic output for preroll addon lookup and response handling. */
+internal expect fun writePrerollErrorLog(message: String)
+
 internal expect object AddonStorage {
     fun loadInstalledAddonUrls(profileId: Int): List<String>
     fun saveInstalledAddonUrls(profileId: Int, urls: List<String>)
