@@ -15,6 +15,7 @@ internal class HostFunctions(
     private val scraperSettingsJson: String,
     private val callArgsJson: String = "{}",
     private val onResult: (String) -> Unit,
+    private val onLog: (level: String, message: String) -> Unit = { _, _ -> },
 ) : HostModule {
     private val log = Logger.withTag("PluginRuntime")
 
@@ -29,26 +30,11 @@ internal class HostFunctions(
         }
 
         runtime.define("console") {
-            function("log") { args ->
-                log.d { "Plugin:$scraperId ${args.joinToString(" ") { it?.toString() ?: "null" }}" }
-                null
-            }
-            function("error") { args ->
-                log.e { "Plugin:$scraperId ${args.joinToString(" ") { it?.toString() ?: "null" }}" }
-                null
-            }
-            function("warn") { args ->
-                log.w { "Plugin:$scraperId ${args.joinToString(" ") { it?.toString() ?: "null" }}" }
-                null
-            }
-            function("info") { args ->
-                log.i { "Plugin:$scraperId ${args.joinToString(" ") { it?.toString() ?: "null" }}" }
-                null
-            }
-            function("debug") { args ->
-                log.d { "Plugin:$scraperId ${args.joinToString(" ") { it?.toString() ?: "null" }}" }
-                null
-            }
+            function("log") { args -> reportConsole("log", args); null }
+            function("error") { args -> reportConsole("error", args); null }
+            function("warn") { args -> reportConsole("warn", args); null }
+            function("info") { args -> reportConsole("info", args); null }
+            function("debug") { args -> reportConsole("debug", args); null }
         }
 
         runtime.function("__get_scraper_id") { scraperId }
@@ -59,5 +45,17 @@ internal class HostFunctions(
             onResult(args.getOrNull(0)?.toString() ?: "[]")
             null
         }
+    }
+
+    private fun reportConsole(level: String, args: Array<Any?>) {
+        val message = args.joinToString(" ") { it?.toString() ?: "null" }
+        val taggedMessage = "Plugin:$scraperId $message"
+        when (level) {
+            "error" -> log.e { taggedMessage }
+            "warn" -> log.w { taggedMessage }
+            "info" -> log.i { taggedMessage }
+            else -> log.d { taggedMessage }
+        }
+        runCatching { onLog(level, message) }
     }
 }
