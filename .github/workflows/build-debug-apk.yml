@@ -1,0 +1,69 @@
+name: Build CloudSeven Debug APK
+
+# No secrets needed: debug builds are signed with the default Android debug key,
+# and CloudSeven runs in offline mode (no backend), so the Supabase/Trakt/etc. keys are not required.
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: debug-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build full debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # Chaquopy (embedded Python for addons) needs Python 3.11 on the build machine.
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Fit Gradle memory to the runner
+        run: |
+          mkdir -p "$HOME/.gradle"
+          {
+            echo "org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8"
+            echo "kotlin.daemon.jvmargs=-Xmx3g"
+          } >> "$HOME/.gradle/gradle.properties"
+
+      - name: Create local properties
+        run: |
+          cat > local.properties <<'PROPS'
+          SIMKL_CLIENT_ID=dc20e0db975583b15096267cee79cd23b1f56d4bd301ce3c51e4a96a49c834a6
+          SIMKL_REDIRECT_URI=nuvio://auth/simkl
+          SIMKL_APP_NAME=nuvio
+          INTRODB_API_URL=https://api.introdb.app/
+          IMDB_RATINGS_API_BASE_URL=https://seriesgraph.com/
+          IMDB_TAPFRAME_API_BASE_URL=https://imdb.tapframe.space/
+          PROPS
+
+      - name: Build full debug APK
+        run: ./gradlew :androidApp:assembleFullDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: CloudSeven-debug
+          path: androidApp/build/outputs/apk/full/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
