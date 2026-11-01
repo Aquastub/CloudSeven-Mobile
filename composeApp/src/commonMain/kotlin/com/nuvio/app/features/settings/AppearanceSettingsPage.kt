@@ -93,6 +93,9 @@ internal fun LazyListScope.appearanceSettingsContent(
     onPosterCustomizationClick: () -> Unit,
 ) {
     item {
+        ThemePackageSettingsSection(isTablet = isTablet)
+    }
+    item {
         SettingsSection(
             title = stringResource(Res.string.settings_appearance_section_theme),
             isTablet = isTablet,

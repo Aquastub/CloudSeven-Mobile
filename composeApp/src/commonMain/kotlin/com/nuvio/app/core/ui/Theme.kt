@@ -1,6 +1,8 @@
 package com.nuvio.app.core.ui
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import com.nuvio.app.core.theme.ThemePackageManifest
+import com.nuvio.app.core.theme.toColorPalette
 import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RippleConfiguration
@@ -26,6 +28,10 @@ import nuvio.composeapp.generated.resources.jetbrains_sans_semibold
 import org.jetbrains.compose.resources.Font
 
 val LocalAppTheme = staticCompositionLocalOf { AppTheme.WHITE }
+/** Declarative layout hints from the active .c7theme; screens may opt into supported presets. */
+val LocalThemePackageLayout = staticCompositionLocalOf<Map<String, String>> { emptyMap() }
+/** Component-level style tokens supplied by the active .c7theme package. */
+val LocalThemePackageComponents = staticCompositionLocalOf<Map<String, String>> { emptyMap() }
 val LocalThemePalette = staticCompositionLocalOf { ThemeColors.White }
 
 val MaterialTheme.themePalette: ThemeColorPalette
@@ -198,10 +204,12 @@ fun NuvioTheme(
     appTheme: AppTheme = AppTheme.WHITE,
     amoled: Boolean = false,
     customThemeColors: CustomThemeColors = CustomThemeColors.Default,
+    customThemePackage: ThemePackageManifest? = null,
     content: @Composable () -> Unit,
 ) {
-    val palette = remember(appTheme, customThemeColors) {
-        ThemeColors.getColorPalette(appTheme, customThemeColors)
+    val palette = remember(appTheme, customThemeColors, customThemePackage) {
+        val base = ThemeColors.getColorPalette(appTheme, customThemeColors)
+        customThemePackage?.toColorPalette(base) ?: base
     }
     val colorScheme = buildColorScheme(palette, amoled = amoled)
     val tokens = defaultNuvioThemeTokens(palette, amoled = amoled, colorScheme = colorScheme)
@@ -217,6 +225,8 @@ fun NuvioTheme(
         LocalRippleConfiguration provides NuvioRippleConfiguration,
         LocalAppTheme provides appTheme,
         LocalThemePalette provides palette,
+        LocalThemePackageLayout provides (customThemePackage?.layout ?: emptyMap()),
+        LocalThemePackageComponents provides (customThemePackage?.components ?: emptyMap()),
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
