@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "studio.midnight",
+  "name": "Midnight Studio",
+  "author": "Cloud 7",
+  "description": "Example theme manifest for Cloud 7.",
+  "version": "1.0.0",
+  "minAppVersion": "0.0.0",
+  "colors": {
+    "accent": "#8B5CF6",
+    "accentSecondary": "#4F46E5",
+    "background": "#09090F",
+    "surface": "#151522",
+    "card": "#1D1B2B",
+    "focus": "#C4B5FD"
+  },
+  "typography": {},
+  "assets": {},
+  "layout": { "home": "MODERN" },
+  "components": {
+    "poster.cornerRadiusDp": "14",
+    "poster.shape": "rounded",
+    "navigation.style": "floating"
+  }
+}
