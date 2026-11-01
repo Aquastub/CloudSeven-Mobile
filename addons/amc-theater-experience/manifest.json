@@ -1,0 +1,75 @@
+{
+  "id": "com.aquastub.cloud7.amc-theater-experience",
+  "version": "1.1.0",
+  "name": "AMC Theater Experience",
+  "description": "A cinema-style preroll with automatic upcoming-movie trailer discovery through TMDB and YouTube metadata.",
+  "resources": ["catalog"],
+  "types": ["series", "movie"],
+  "catalogs": [],
+  "idPrefixes": [],
+  "nuvio": {
+    "permissions": ["preroll"],
+    "settings": [
+      {
+        "key": "preRollUrl",
+        "label": "2026 AMC pre-roll video URL",
+        "type": "url",
+        "hint": "Direct MP4 or HLS URL for slot 1. Use media you have permission to use."
+      },
+      {
+        "key": "trailerDetectionMode",
+        "label": "Trailer discovery mode",
+        "type": "text",
+        "hint": "Use tmdb for automatic discovery, or feed to use only your custom JSON feed."
+      },
+      {
+        "key": "tmdbApiKey",
+        "label": "TMDB API key",
+        "type": "password",
+        "hint": "Required for automatic upcoming-movie and trailer discovery. Use your own TMDB API key."
+      },
+      {
+        "key": "releaseRegion",
+        "label": "Upcoming movie release region",
+        "type": "text",
+        "hint": "Two-letter region code. Defaults to US for the AMC-style lineup."
+      },
+      {
+        "key": "trailerLanguage",
+        "label": "Trailer language",
+        "type": "text",
+        "hint": "TMDB language code such as en-US or pt-BR. Defaults to en-US."
+      },
+      {
+        "key": "releaseWindowDays",
+        "label": "Upcoming release window (days)",
+        "type": "number",
+        "hint": "Search upcoming movie releases from today through this many days (7–180; default 90)."
+      },
+      {
+        "key": "trailerFeedUrl",
+        "label": "Fallback upcoming trailers feed URL",
+        "type": "url",
+        "hint": "Optional JSON feed with up to eight direct-playable URLs. Used if TMDB discovery is unavailable or returns no trailers, unless mode is feed."
+      },
+      {
+        "key": "featurePresentationUrl",
+        "label": "Feature Presentation video URL",
+        "type": "url",
+        "hint": "Direct video URL for slot 10."
+      },
+      {
+        "key": "dolbyIntroUrl",
+        "label": "Dolby at AMC intro video URL",
+        "type": "url",
+        "hint": "Direct video URL for slot 11."
+      },
+      {
+        "key": "enjoyShowUrl",
+        "label": "Enjoy the Show video URL",
+        "type": "url",
+        "hint": "Direct video URL for slot 12."
+      }
+    ]
+  }
+}

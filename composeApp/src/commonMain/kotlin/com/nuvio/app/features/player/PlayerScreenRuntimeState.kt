@@ -138,7 +138,8 @@ internal class PlayerScreenRuntime(
     var shouldPlay by mutableStateOf(true)
 
     /** A clip an addon wants played before this episode (drawn above the player, then the episode starts). */
-    var prerollClip by mutableStateOf<PrerollClip?>(null)
+    var prerollClips by mutableStateOf<List<PrerollClip>>(emptyList())
+    var prerollClipIndex by mutableStateOf(0)
 
     /**
      * True from the moment an episode begins until its pre-roll has been asked for and played, so the

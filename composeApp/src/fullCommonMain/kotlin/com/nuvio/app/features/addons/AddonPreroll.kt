@@ -3,18 +3,19 @@ package com.nuvio.app.features.addons
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 
 /**
  * Asks installed addons with the "preroll" permission for a clip to play before an episode.
  * The addon receives `{ resource: "preroll", id: <video id>, extra: { title, season, episode, ... } }`
- * and answers `{ url, headers? }` (or `{}` for "no clip this time"). The first addon with a clip wins.
+ * and answers `{ clips: [{ url, headers?, title? }, ...] }`. Legacy `{ url, headers? }` replies remain supported.
  */
 internal object AddonPreroll {
     private val json = Json { ignoreUnknownKeys = true }
 
-    suspend fun request(request: PrerollRequest): PrerollClip? {
+    suspend fun request(request: PrerollRequest): List<PrerollClip>? {
         val addons = LocalAddonRegistry.all()
         log("Lookup started: contentType=${request.contentType ?: "series"}, season=${request.seasonNumber}, episode=${request.episodeNumber}, title=${request.title.take(100)}, hasVideoId=${!request.videoId.isNullOrBlank()}, addons=${addons.size}")
 
@@ -50,10 +51,10 @@ internal object AddonPreroll {
                 continue
             }
 
-            val clip = parse(raw, addon.slug)
-            if (clip != null) {
-                log("Selected preroll from addon '${addon.slug}', host=${hostOf(clip.url)}")
-                return clip
+            val clips = parse(raw, addon.slug)
+            if (!clips.isNullOrEmpty()) {
+                log("Selected ${clips.size} preroll clip(s) from addon '${addon.slug}'")
+                return clips
             }
         }
 
@@ -61,7 +62,7 @@ internal object AddonPreroll {
         return null
     }
 
-    private fun parse(raw: String, addonId: String): PrerollClip? {
+    private fun parse(raw: String, addonId: String): List<PrerollClip>? {
         val element = try {
             json.parseToJsonElement(raw)
         } catch (error: Throwable) {
@@ -74,24 +75,33 @@ internal object AddonPreroll {
             return null
         }
 
-        val url = (obj["url"] as? JsonPrimitive)?.contentOrNull?.trim().orEmpty()
-        if (url.isBlank()) {
-            log("Addon '$addonId' returned no clip URL")
-            return null
-        }
-        if (!url.startsWith("http://", ignoreCase = true) && !url.startsWith("https://", ignoreCase = true)) {
-            log("Addon '$addonId' returned a non-HTTP(S) URL")
-            return null
-        }
+        // New sequence format: { "clips": [{ "url": "...", "headers": {}, "title": "..." }] }
+        // Keep the old single-clip format working for existing addons.
+        val entries = (obj["clips"] as? JsonArray)?.toList()
+            ?: listOf(element)
+        val clips = entries.mapNotNull { entry ->
+            val clipObject = entry as? JsonObject ?: return@mapNotNull null
+            val url = (clipObject["url"] as? JsonPrimitive)?.contentOrNull?.trim().orEmpty()
+            if (url.isBlank()) return@mapNotNull null
+            if (!url.startsWith("http://", ignoreCase = true) && !url.startsWith("https://", ignoreCase = true)) {
+                log("Addon '$addonId' returned a non-HTTP(S) clip URL")
+                return@mapNotNull null
+            }
+            val headers = (clipObject["headers"] as? JsonObject)?.mapNotNull { (key, value) ->
+                (value as? JsonPrimitive)?.contentOrNull?.let { key to it }
+            }?.toMap().orEmpty()
+            val title = (clipObject["title"] as? JsonPrimitive)?.contentOrNull?.trim()?.take(100)
+            PrerollClip(url = url, headers = headers, title = title)
+        }.take(MAX_PREROLL_CLIPS)
 
-        val headers = (obj["headers"] as? JsonObject)?.mapNotNull { (key, value) ->
-            (value as? JsonPrimitive)?.contentOrNull?.let { key to it }
-        }?.toMap().orEmpty()
-        return PrerollClip(url = url, headers = headers)
+        if (clips.isEmpty()) log("Addon '$addonId' returned no valid preroll clips")
+        return clips.takeIf { it.isNotEmpty() }
     }
 
     private fun hostOf(url: String): String =
         url.substringAfter("://", "").substringBefore('/').substringBefore('?').take(160)
+
+    private const val MAX_PREROLL_CLIPS = 24
 
     private fun log(message: String) {
         runCatching { AddonDiagnostics.record("Preroll", message) }

@@ -476,14 +476,21 @@ private fun PlayerScreenRuntime.RenderPlayerControls(
     }
 
     // A clip an addon wants shown before the episode. Covers everything until it ends or is skipped.
-    prerollClip?.let { clip ->
-        PrerollOverlay(
-            clip = clip,
-            onFinished = {
-                prerollClip = null
-                prerollPending = false
-            },
-        )
+    prerollClips.getOrNull(prerollClipIndex)?.let { clip ->
+        key(prerollClipIndex, clip.url) {
+            PrerollOverlay(
+                clip = clip,
+                onFinished = {
+                    if (prerollClipIndex + 1 < prerollClips.size) {
+                        prerollClipIndex += 1
+                    } else {
+                        prerollClips = emptyList()
+                        prerollClipIndex = 0
+                        prerollPending = false
+                    }
+                },
+            )
+        }
     }
 
     // Buttons added by addons (e.g. a DVR "Record" button). Drawn above the controls.

@@ -59,7 +59,9 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
             return@LaunchedEffect
         }
         prerollPending = true
-        val clip = withTimeoutOrNull(PREROLL_LOOKUP_TIMEOUT_MS) {
+        prerollClips = emptyList()
+        prerollClipIndex = 0
+        val clips = withTimeoutOrNull(PREROLL_LOOKUP_TIMEOUT_MS) {
             runCatching {
                 provider(
                     PrerollRequest(
@@ -75,7 +77,12 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
             }.getOrNull()
         }
         // No clip: the episode starts right away. With a clip: it waits until the overlay is done.
-        if (clip == null) prerollPending = false else prerollClip = clip
+        if (clips.isNullOrEmpty()) {
+            prerollPending = false
+        } else {
+            prerollClips = clips
+            prerollClipIndex = 0
+        }
     }
 
     val currentFeedback = liveGestureFeedback ?: gestureFeedback

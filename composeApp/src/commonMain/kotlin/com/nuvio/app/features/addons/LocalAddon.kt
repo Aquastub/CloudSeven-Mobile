@@ -56,7 +56,7 @@ data class PrerollRequest(
 )
 
 /** A short clip an addon wants played before the episode. */
-data class PrerollClip(val url: String, val headers: Map<String, String> = emptyMap())
+data class PrerollClip(val url: String, val headers: Map<String, String> = emptyMap(), val title: String? = null)
 
 /** What the player tells an addon about what is playing. */
 data class PlayerAddonContext(
@@ -148,7 +148,7 @@ object LocalAddonUi {
     var settingsContent: (@androidx.compose.runtime.Composable (String) -> Unit)? = null
 
     /** Asks addons for a clip to play before an episode begins (null = none). Set by the full build. */
-    var prerollProvider: (suspend (PrerollRequest) -> PrerollClip?)? = null
+    var prerollProvider: (suspend (PrerollRequest) -> List<PrerollClip>?)? = null
 
     /** Draws the addon-provided buttons for the player. Receives what is playing and a modifier for placement. */
     var playerActions: (@androidx.compose.runtime.Composable (PlayerAddonContext, androidx.compose.ui.Modifier) -> Unit)? = null
