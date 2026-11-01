@@ -48,6 +48,21 @@ actual object ThemeSettingsStorage {
             ?.apply()
     }
 
+    actual fun loadInstalledThemePackages(): String? = preferences?.getString(ProfileScopedKey.of("installed_theme_packages"), null)
+
+    actual fun saveInstalledThemePackages(packagesJson: String) {
+        preferences?.edit()?.putString(ProfileScopedKey.of("installed_theme_packages"), packagesJson)?.apply()
+    }
+
+    actual fun loadActiveThemePackageId(): String? = preferences?.getString(ProfileScopedKey.of("active_theme_package_id"), null)
+
+    actual fun saveActiveThemePackageId(themeId: String?) {
+        preferences?.edit()?.apply {
+            if (themeId == null) remove(ProfileScopedKey.of("active_theme_package_id"))
+            else putString(ProfileScopedKey.of("active_theme_package_id"), themeId)
+        }?.apply()
+    }
+
     actual fun loadCustomThemeColors(): String? =
         preferences?.getString(ProfileScopedKey.of(customThemeColorsKey), null)
 

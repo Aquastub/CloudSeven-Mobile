@@ -34,6 +34,20 @@ actual object ThemeSettingsStorage {
         NSUserDefaults.standardUserDefaults.setObject(themeName, forKey = ProfileScopedKey.of(selectedThemeKey))
     }
 
+    actual fun loadInstalledThemePackages(): String? = NSUserDefaults.standardUserDefaults.stringForKey(ProfileScopedKey.of("installed_theme_packages"))
+
+    actual fun saveInstalledThemePackages(packagesJson: String) {
+        NSUserDefaults.standardUserDefaults.setObject(packagesJson, forKey = ProfileScopedKey.of("installed_theme_packages"))
+    }
+
+    actual fun loadActiveThemePackageId(): String? = NSUserDefaults.standardUserDefaults.stringForKey(ProfileScopedKey.of("active_theme_package_id"))
+
+    actual fun saveActiveThemePackageId(themeId: String?) {
+        val defaults = NSUserDefaults.standardUserDefaults
+        val key = ProfileScopedKey.of("active_theme_package_id")
+        if (themeId == null) defaults.removeObjectForKey(key) else defaults.setObject(themeId, forKey = key)
+    }
+
     actual fun loadCustomThemeColors(): String? =
         NSUserDefaults.standardUserDefaults.stringForKey(ProfileScopedKey.of(customThemeColorsKey))
 
