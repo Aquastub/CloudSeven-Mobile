@@ -44,7 +44,8 @@ internal actual fun ThemePackageDocumentPicker(
                     entryCount++
                     require(entryCount <= MAX_THEME_ENTRIES) { "Theme archive contains too many files." }
                     val name = entry.name
-                    require(!name.startsWith("/") && '\\' !in name && name.split('/').none { it == ".." || it == "." }) {
+                    require(name.isNotBlank() && !name.startsWith('/') && '\\' !in name &&
+                        name.split('/').none { it == ".." || it == "." }) {
                         "Theme archive contains an unsafe file path."
                     }
                     if (name == "manifest.json" && !entry.isDirectory) {
