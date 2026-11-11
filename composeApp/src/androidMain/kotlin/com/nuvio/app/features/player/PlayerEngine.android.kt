@@ -624,19 +624,20 @@ private fun ExoPlayerSurface(
     }
 
     DisposableEffect(exoPlayer) {
-        PlayerPictureInPictureManager.registerPausePlaybackCallback {
-            exoPlayer.pause()
-        }
-        PlayerPictureInPictureManager.registerTogglePlaybackCallback {
-            if (exoPlayer.isPlaying) {
-                exoPlayer.pause()
-            } else {
-                if (exoPlayer.playbackState == androidx.media3.common.Player.STATE_ENDED) {
-                    exoPlayer.seekTo(0L)
+        PlayerPictureInPictureManager.registerPlaybackCallbacks(
+            owner = exoPlayer,
+            pause = { exoPlayer.pause() },
+            toggle = {
+                if (exoPlayer.isPlaying) {
+                    exoPlayer.pause()
+                } else {
+                    if (exoPlayer.playbackState == androidx.media3.common.Player.STATE_ENDED) {
+                        exoPlayer.seekTo(0L)
+                    }
+                    exoPlayer.play()
                 }
-                exoPlayer.play()
-            }
-        }
+            },
+        )
 
         var liveEdgeRejoins = 0 // Nuvio RS: live window recovery
 
@@ -796,8 +797,7 @@ private fun ExoPlayerSurface(
         }
         exoPlayer.addListener(listener)
         onDispose {
-            PlayerPictureInPictureManager.registerPausePlaybackCallback(null)
-            PlayerPictureInPictureManager.registerTogglePlaybackCallback(null)
+            PlayerPictureInPictureManager.unregisterPlaybackCallbacks(exoPlayer)
             exoPlayer.removeListener(listener)
             playerViewRef?.keepScreenOn = false
             subtitleSelectionJob?.cancel()
@@ -1382,25 +1382,23 @@ private fun LibmpvPlayerSurface(
 
     DisposableEffect(playerViewRef) {
         val view = playerViewRef ?: return@DisposableEffect onDispose {}
-        PlayerPictureInPictureManager.registerPausePlaybackCallback {
-            view.setPaused(true)
-        }
-        PlayerPictureInPictureManager.registerTogglePlaybackCallback {
-            coroutineScope.launch {
-                val snapshot = view.snapshot()
-                if (snapshot.isPlaying) {
-                    view.setPaused(true)
-                } else {
-                    if (snapshot.isEnded) {
-                        view.seekToMs(0L)
+        PlayerPictureInPictureManager.registerPlaybackCallbacks(
+            owner = view,
+            pause = { view.setPaused(true) },
+            toggle = {
+                coroutineScope.launch {
+                    val snapshot = view.snapshot()
+                    if (snapshot.isPlaying) {
+                        view.setPaused(true)
+                    } else {
+                        if (snapshot.isEnded) view.seekToMs(0L)
+                        view.setPaused(false)
                     }
-                    view.setPaused(false)
                 }
-            }
-        }
+            },
+        )
         onDispose {
-            PlayerPictureInPictureManager.registerPausePlaybackCallback(null)
-            PlayerPictureInPictureManager.registerTogglePlaybackCallback(null)
+            PlayerPictureInPictureManager.unregisterPlaybackCallbacks(view)
             view.keepScreenOn = false
         }
     }

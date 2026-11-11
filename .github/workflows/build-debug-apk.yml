@@ -58,7 +58,7 @@ jobs:
           PROPS
 
       - name: Build full debug APK
-        run: ./gradlew :androidApp:assembleFullDebug --stacktrace
+        run: chmod +x ./gradlew && ./gradlew :androidApp:assembleFullDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v7

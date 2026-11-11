@@ -36,8 +36,16 @@ internal object PlayerPictureInPictureManager {
     private val mainHandler = Handler(Looper.getMainLooper())
     private var wasInPictureInPictureMode = false
     private var pendingPictureInPictureExitCheck: Runnable? = null
-    private var pausePlaybackCallback: (() -> Unit)? = null
-    private var togglePlaybackCallback: (() -> Unit)? = null
+    private data class PlaybackCallbacks(
+        val pause: () -> Unit,
+        val toggle: () -> Unit,
+    )
+
+    // Keep callbacks per player instance. Preroll creates a second player above the
+    // episode player; disposing that temporary player must reveal the episode callbacks.
+    private val playbackCallbacks = LinkedHashMap<Any, PlaybackCallbacks>()
+    private val activePlaybackCallbacks: PlaybackCallbacks?
+        get() = playbackCallbacks.values.lastOrNull()
 
     fun updateSession(
         activity: Activity,
@@ -60,15 +68,14 @@ internal object PlayerPictureInPictureManager {
         applyPictureInPictureParams(activity)
     }
 
-    fun registerPausePlaybackCallback(callback: (() -> Unit)?) {
-        pausePlaybackCallback = callback
-        if (callback == null) {
-            clearPendingPictureInPictureExitCheck()
-        }
+    fun registerPlaybackCallbacks(owner: Any, pause: () -> Unit, toggle: () -> Unit) {
+        // Re-insertion makes the currently presented player the active PiP target.
+        playbackCallbacks.remove(owner)
+        playbackCallbacks[owner] = PlaybackCallbacks(pause, toggle)
     }
 
-    fun registerTogglePlaybackCallback(callback: (() -> Unit)?) {
-        togglePlaybackCallback = callback
+    fun unregisterPlaybackCallbacks(owner: Any) {
+        playbackCallbacks.remove(owner)
     }
 
     fun onUserLeaveHint(activity: Activity): Boolean {
@@ -93,7 +100,7 @@ internal object PlayerPictureInPictureManager {
         val exitCheck = Runnable {
             val returnedToForeground = activity.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
             if (!returnedToForeground || activity.isFinishing || activity.isDestroyed) {
-                pausePlaybackCallback?.invoke()
+                activePlaybackCallbacks?.pause?.invoke()
             }
         }
         pendingPictureInPictureExitCheck = exitCheck
@@ -102,7 +109,7 @@ internal object PlayerPictureInPictureManager {
 
     fun toggleViaRemoteAction(context: Context) {
         val wasPlaying = sessionState.isPlaying
-        togglePlaybackCallback?.invoke()
+        activePlaybackCallbacks?.toggle?.invoke()
         sessionState = sessionState.copy(isPlaying = !wasPlaying)
         if (context is Activity) {
             applyPictureInPictureParams(context)
