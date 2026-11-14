@@ -2,6 +2,7 @@ package com.nuvio.app
 
 import android.content.Intent
 import android.content.res.Configuration
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.compose.setContent
 
@@ -82,6 +83,14 @@ import com.nuvio.app.features.watchprogress.WatchProgressStorage
 
 open class MainActivity : AppCompatActivity() {
     private var pipRemoteActionReceiver: PipRemoteActionReceiver? = null
+
+    /** True on Android TV / Google TV devices, false on phones and tablets. */
+    private val isTelevisionDevice: Boolean
+        get() {
+            val uiMode = resources.configuration.uiMode and Configuration.UI_MODE_TYPE_MASK
+            return uiMode == Configuration.UI_MODE_TYPE_TELEVISION ||
+                packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+        }
     private val reshapedMigrationUi = ReshapedMigrationUi(this) // Nuvio RS hook
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -166,7 +175,9 @@ open class MainActivity : AppCompatActivity() {
         handleIncomingAppIntent(intent)
 
         setContent {
-            App()
+            // Reuse Mobile's TV/tablet navigation layout only when Android identifies this
+            // device as a television. Phones keep their normal responsive mobile navigation.
+            App(useTabletFloatingTabBar = isTelevisionDevice)
         }
     }
 

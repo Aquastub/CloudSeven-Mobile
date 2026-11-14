@@ -111,7 +111,9 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
         jniLibs {
-            useLegacyPackaging = true
+            // Store native libraries compressed in the APK to reduce download size.
+            // Android extracts them during installation on supported API levels.
+            useLegacyPackaging = false
             // sherpa-onnx's JNI library only needs libonnxruntime; its C/C++ API libraries are unused.
             excludes += listOf("lib/*/libsherpa-onnx-c-api.so", "lib/*/libsherpa-onnx-cxx-api.so")
             pickFirsts += listOf(

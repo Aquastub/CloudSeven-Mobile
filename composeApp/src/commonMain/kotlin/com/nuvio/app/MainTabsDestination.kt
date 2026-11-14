@@ -1,5 +1,6 @@
 package com.nuvio.app
 
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
@@ -73,10 +74,14 @@ internal fun MainTabsDestination(
 ) {
     PlatformBackHandler(enabled = rootRouteActive, onBack = onBack)
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize().focusGroup()) {
         val isTabletLayout = useTabletFloatingTabBar || maxWidth >= 768.dp
         val tabActions = remember(actions, isTabletLayout) { actions(isTabletLayout) }
-        val useNativeBottomTabs = if (useNativeNavigation) {
+        // A television always uses the in-app TV navigation, never a phone-native
+        // bottom bar, even if a mobile navigation preference was previously enabled.
+        val useNativeBottomTabs = if (useTabletFloatingTabBar) {
+            false
+        } else if (useNativeNavigation) {
             useNativeTabBar
         } else {
             liquidGlassNativeTabBarSupported && liquidGlassNativeTabBarEnabled && initialHomeReady
@@ -87,7 +92,7 @@ internal fun MainTabsDestination(
         val navBarStyleSetting by remember { ThemeSettingsRepository.navBarStyle }.collectAsStateWithLifecycle()
         val navBarGlowEnabled by ThemeSettingsRepository.navBarGlowEnabled.collectAsStateWithLifecycle()
         val pillNavEnabled by PillNavRepository.enabled.collectAsStateWithLifecycle() // Pill nav hook
-        val usePillNav = pillNavEnabled && !useNativeBottomTabs
+        val usePillNav = pillNavEnabled && !useNativeBottomTabs && !useTabletFloatingTabBar
         val pillNavState = rememberPillNavState()
         val floatingNavigationItems = listOfNotNull(
             FloatingNavigationItem(
@@ -193,6 +198,7 @@ internal fun MainTabsDestination(
                         actions = tabActions,
                         modifier = Modifier
                             .fillMaxSize()
+                            .focusGroup()
                             .then(if (usePillNav || isTabletLayout || navBarStyleSetting != NavBarStyle.CLASSIC) Modifier.hazeSource(state = navBarHazeState) else Modifier)
                             .then(if (navBarStyleSetting == NavBarStyle.ADAPTIVE) Modifier.nestedScroll(navBarScrollState.nestedScrollConnection) else Modifier)
                             .then(if (usePillNav) Modifier.pillNavContent(pillNavState, selectedTab) else Modifier)
@@ -210,7 +216,7 @@ internal fun MainTabsDestination(
                             top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 10.dp,
                             bottom = 8.dp,
                         ),
-                        compactSize = true,
+                        compactSize = !useTabletFloatingTabBar,
                         items = floatingNavigationItems,
                         glowEnabled = navBarGlowEnabled,
                     )
